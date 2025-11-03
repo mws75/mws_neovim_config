@@ -93,16 +93,67 @@ require("lazy").setup({
    end,
   },
   {
-    "andymass/vim-matchup",
-    event = "VimEnter",
+    "nvim-treesitter/nvim-treesitter",
+    build = ":TSUpdate",
+    event = { "BufReadPost", "BufNewFile" },
     config = function()
-      -- Enable matchup integration with % motion
+      require("nvim-treesitter.configs").setup({
+        ensure_installed = {
+          "lua",
+          "typescript",
+          "tsx",
+          "javascript",
+          "json",
+          "html",
+          "css",
+          "markdown",
+        },
+        highlight = {
+          enable = true,
+          additional_vim_regex_highlighting = false,
+        },
+        indent = {
+          enable = true,
+        },
+        -- Enable matchup integration
+        matchup = {
+          enable = true,
+        },
+      })
+    end,
+  },
+  {
+    "andymass/vim-matchup",
+    dependencies = { "nvim-treesitter/nvim-treesitter" },
+    event = { "BufReadPost", "BufNewFile" },
+    init = function()
+      -- These need to be set BEFORE the plugin loads
+      vim.g.matchup_matchparen_enabled = 1
       vim.g.matchup_matchparen_offscreen = { method = "popup" }
-      -- Optional: Enable highlighting delay (reduces lag)
       vim.g.matchup_matchparen_deferred = 1
-      -- Optional: Highlight timeout in milliseconds
       vim.g.matchup_matchparen_timeout = 300
       vim.g.matchup_matchparen_insert_timeout = 60
+      vim.g.matchup_surround_enabled = 1
+    end,
+    config = function()
+      -- Make highlighting more visible
+      vim.api.nvim_set_hl(0, "MatchParen", {
+        bg = "#3d59a1",
+        fg = "#ffffff",
+        bold = true,
+        underline = true
+      })
+      vim.api.nvim_set_hl(0, "MatchWord", {
+        bg = "#3d59a1",
+        fg = "#ffffff",
+        bold = true,
+        underline = true
+      })
+      vim.api.nvim_set_hl(0, "MatchParenOffscreen", {
+        bg = "#5a7bb1",
+        fg = "#ffffff",
+        bold = true
+      })
     end,
   },
 })
