@@ -81,7 +81,7 @@ require("lazy").setup({
         typescriptreact = {"eslint"},
         javascriptreact = {"eslint"},
       }
-     -- Auto lint on save 
+     -- Auto lint on save
      local lint_augroup = vim.api.nvim_create_augroup("lint", {clear = true})
 
      vim.api.nvim_create_autocmd({"BufEnter", "BufWritePost", "InsertLeave"}, {
@@ -91,6 +91,19 @@ require("lazy").setup({
         end,
      })
    end,
+  },
+  {
+    "andymass/vim-matchup",
+    event = "VimEnter",
+    config = function()
+      -- Enable matchup integration with % motion
+      vim.g.matchup_matchparen_offscreen = { method = "popup" }
+      -- Optional: Enable highlighting delay (reduces lag)
+      vim.g.matchup_matchparen_deferred = 1
+      -- Optional: Highlight timeout in milliseconds
+      vim.g.matchup_matchparen_timeout = 300
+      vim.g.matchup_matchparen_insert_timeout = 60
+    end,
   },
 })
 
