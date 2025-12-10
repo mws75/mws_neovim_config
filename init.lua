@@ -144,6 +144,26 @@ require("lazy").setup({
       end
     end,
   },
+  -- Markdown Rendering
+  {
+    "iamcco/markdown-preview.nvim",
+    cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
+    ft = { "markdown" },
+    build = "cd app && npm install",
+    init = function()
+      vim.g.mkdp_filetypes = { "markdown" }
+    end,
+    config = function()
+      vim.g.mkdp_auto_close = 0
+      vim.g.mkdp_theme = "dark"
+    end,
+  },
+  -- Markdown Rendering in Terminal 
+  {
+    "ellisonleao/glow.nvim",
+    config = true,
+    cmd = "Glow"
+  },
 })
 
 -- ============================================================================
@@ -170,6 +190,20 @@ vim.opt.linebreak = true
 vim.opt.breakindent = true
 
 -- ============================================================================
+-- Autocommands
+-- ============================================================================
+-- Enable text wrapping for markdown and text files
+local wrap_group = vim.api.nvim_create_augroup("WrapSettings", { clear = true })
+vim.api.nvim_create_autocmd("FileType", {
+  group = wrap_group,
+  pattern = { "markdown", "text" },
+  callback = function()
+    vim.opt_local.wrap = true
+    vim.opt_local.linebreak = true
+  end,
+})
+
+-- ============================================================================
 -- Keymaps
 -- ============================================================================
 -- Map jj to escape (popular alternative for touch bar keyboards)
@@ -179,3 +213,16 @@ vim.keymap.set({ "i", "v", "c" }, "jj", "<Esc>", { noremap = true, silent = true
 vim.keymap.set({ "n", "v" }, "<leader>f", function()
   require("conform").format({ async = true, lsp_fallback = true })
 end, { desc = "Format buffer" })
+
+-- Diagnostic keymaps 
+vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, {desc = 'Show diagnostic [E]rror message'})
+
+-- Render Markdown in Browser
+vim.keymap.set('n', '<leader>mp', '<cmd>MarkdownPreview<cr>', {desc = '[M]arkdown [P]review'})
+vim.keymap.set('n', '<leader>ms', '<cmd>MarkdownPreviewStop<cr>', {desc = '[M]arkdown [S]top'})
+
+-- VSP Split Screen navigation
+vim.keymap.set('n', '<C-h>', '<C-w>h', {desc = "Move to left split"})
+vim.keymap.set('n', '<C-j>', '<C-w>j', {desc = "Move to lower split"})
+vim.keymap.set('n', '<C-k>', '<C-w>k', {desc = "Move to upper split"})
+vim.keymap.set('n', '<C-l>', '<C-w>l', {desc = "Move to right split"})
