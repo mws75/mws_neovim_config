@@ -43,6 +43,14 @@ require("lazy").setup({
       vim.cmd.colorscheme("tokyonight")
     end,
   },
+  -- Commenting
+  {
+    "numToStr/Comment.nvim",
+    event = { "BufReadPost", "BufNewFile" },
+    config = function()
+      require("Comment").setup()
+    end,
+  },
   -- Formatting
   {
     "stevearc/conform.nvim",
@@ -158,11 +166,171 @@ require("lazy").setup({
       vim.g.mkdp_theme = "dark"
     end,
   },
-  -- Markdown Rendering in Terminal 
+  -- Markdown Rendering in Terminal
   {
     "ellisonleao/glow.nvim",
     config = true,
     cmd = "Glow"
+  },
+  -- Fuzzy Finder
+  {
+    "nvim-telescope/telescope.nvim",
+    tag = "0.1.8",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    config = function()
+      local builtin = require("telescope.builtin")
+      vim.keymap.set("n", "<leader>ff", builtin.find_files, { desc = "[F]ind [F]iles" })
+      vim.keymap.set("n", "<leader>fb", builtin.buffers, { desc = "[F]ind [B]uffers" })
+      vim.keymap.set("n", "<leader>fh", builtin.help_tags, { desc = "[F]ind [H]elp" })
+    end,
+  },
+
+  -- ============================================================================
+  -- LSP + Completion (Intellisense)
+  -- ============================================================================
+
+  -- Mason: Easy LSP server installation
+  {
+    "williamboman/mason.nvim",
+    config = function()
+      require("mason").setup()
+    end,
+  },
+
+  -- Mason-LSPConfig: Bridge between Mason and lspconfig
+  {
+    "williamboman/mason-lspconfig.nvim",
+    dependencies = { "williamboman/mason.nvim" },
+    config = function()
+      require("mason-lspconfig").setup({
+        ensure_installed = {
+          "ts_ls",        -- TypeScript/JavaScript
+          "lua_ls",          -- Lua
+          "cssls",           -- CSS
+          "html",            -- HTML
+          "jsonls",          -- JSON
+          "tailwindcss",     -- Tailwind CSS
+        },
+      })
+    end,
+  },
+
+  -- LSP Config (Neovim 0.11+ API)
+  {
+    "neovim/nvim-lspconfig",
+    dependencies = {
+      "williamboman/mason.nvim",
+      "williamboman/mason-lspconfig.nvim",
+      "hrsh7th/cmp-nvim-lsp",
+    },
+    config = function()
+      local capabilities = require("cmp_nvim_lsp").default_capabilities()
+
+      -- Configure LSP servers using new vim.lsp.config API
+      vim.lsp.config("ts_ls", {
+        capabilities = capabilities,
+      })
+
+      vim.lsp.config("lua_ls", {
+        capabilities = capabilities,
+        settings = {
+          Lua = {
+            diagnostics = { globals = { "vim" } },
+          },
+        },
+      })
+
+      vim.lsp.config("cssls", { capabilities = capabilities })
+      vim.lsp.config("html", { capabilities = capabilities })
+      vim.lsp.config("jsonls", { capabilities = capabilities })
+      vim.lsp.config("tailwindcss", { capabilities = capabilities })
+
+      -- Enable the servers
+      vim.lsp.enable({ "ts_ls", "lua_ls", "cssls", "html", "jsonls", "tailwindcss" })
+
+      -- LSP Keymaps (set when LSP attaches to buffer)
+      vim.api.nvim_create_autocmd("LspAttach", {
+        callback = function(event)
+          local opts = { buffer = event.buf }
+          vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+          vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
+          vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+          vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
+          vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+          vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+          vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+        end,
+      })
+    end,
+  },
+
+  -- Completion Engine
+  {
+    "hrsh7th/nvim-cmp",
+    dependencies = {
+      "hrsh7th/cmp-nvim-lsp",     -- LSP completions
+      "hrsh7th/cmp-buffer",       -- Buffer words
+      "hrsh7th/cmp-path",         -- File paths
+      "L3MON4D3/LuaSnip",         -- Snippet engine (required)
+      "saadparwaiz1/cmp_luasnip", -- Snippet completions
+    },
+    config = function()
+      local cmp = require("cmp")
+      local luasnip = require("luasnip")
+
+      cmp.setup({
+        snippet = {
+          expand = function(args)
+            luasnip.lsp_expand(args.body)
+          end,
+        },
+
+        -- NON-AGGRESSIVE: Only show completions when you ask for them
+        completion = {
+          autocomplete = false, -- Disable auto-popup
+        },
+
+        mapping = cmp.mapping.preset.insert({
+          -- Ctrl+Space to trigger completions manually
+          ["<C-Space>"] = cmp.mapping.complete(),
+
+          -- Navigate completion menu
+          ["<C-n>"] = cmp.mapping.select_next_item(),
+          ["<C-p>"] = cmp.mapping.select_prev_item(),
+
+          -- Scroll docs
+          ["<C-b>"] = cmp.mapping.scroll_docs(-4),
+          ["<C-f>"] = cmp.mapping.scroll_docs(4),
+
+          -- Confirm selection
+          ["<CR>"] = cmp.mapping.confirm({ select = false }),
+          ["<Tab>"] = cmp.mapping.confirm({ select = true }),
+
+          -- Cancel
+          ["<C-e>"] = cmp.mapping.abort(),
+        }),
+
+        sources = cmp.config.sources({
+          { name = "nvim_lsp" },
+          { name = "luasnip" },
+          { name = "buffer" },
+          { name = "path" },
+        }),
+
+        -- Simple formatting
+        formatting = {
+          format = function(entry, vim_item)
+            vim_item.menu = ({
+              nvim_lsp = "[LSP]",
+              buffer = "[Buf]",
+              path = "[Path]",
+              luasnip = "[Snip]",
+            })[entry.source.name]
+            return vim_item
+          end,
+        },
+      })
+    end,
   },
 })
 
@@ -200,6 +368,18 @@ vim.api.nvim_create_autocmd("FileType", {
   callback = function()
     vim.opt_local.wrap = true
     vim.opt_local.linebreak = true
+  end,
+})
+
+-- Force 2-space indentation for web dev files
+local indent_group = vim.api.nvim_create_augroup("IndentSettings", { clear = true })
+vim.api.nvim_create_autocmd("FileType", {
+  group = indent_group,
+  pattern = { "typescript", "typescriptreact", "javascript", "javascriptreact", "json", "html", "css", "lua" },
+  callback = function()
+    vim.opt_local.tabstop = 2
+    vim.opt_local.shiftwidth = 2
+    vim.opt_local.expandtab = true
   end,
 })
 
